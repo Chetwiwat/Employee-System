@@ -5,7 +5,6 @@ Employee and department management. React + Ant Design frontend, NestJS + TypeOR
 ## Requirements
 
 - **Node.js 24.15.0** (`nvm use` reads `.nvmrc`)
-- MySQL 8 with the provided database
 
 ## Setup
 
