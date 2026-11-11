@@ -6,6 +6,7 @@ import type { Dayjs } from "dayjs";
 import { errorMessage } from "../api/client";
 import { departmentApi } from "../api/departments";
 import { employeeApi } from "../api/employees";
+import { useI18n } from "../i18n";
 import { fullName } from "../utils";
 import type { DepartmentDetail, Employee } from "../types";
 
@@ -45,6 +46,7 @@ export default function AddEmployeesModal({
   onAdded,
 }: Props) {
   const { message } = App.useApp();
+  const { t } = useI18n();
   const [form] = Form.useForm<FormValues>();
   const [saving, setSaving] = useState(false);
   const [candidates, setCandidates] = useState<Employee[]>([]);
@@ -84,7 +86,9 @@ export default function AddEmployeesModal({
       value: e.id,
       label:
         `${e.employeeCode} · ${fullName(e)}` +
-        (e.department ? `  (now in ${e.department.departmentName})` : ""),
+        (e.department
+          ? `  (${t("addEmp.nowIn", { name: e.department.departmentName })})`
+          : ""),
     }));
 
   const handleOk = async () => {
@@ -103,7 +107,7 @@ export default function AddEmployeesModal({
         effectiveDate: values.effectiveDate.format("YYYY-MM-DD"),
         remark: values.remark?.trim() || undefined,
       });
-      message.success(`${values.employees.length} employee(s) added`);
+      message.success(t("addEmp.added", { n: values.employees.length }));
       onAdded();
     } catch (e) {
       message.error(errorMessage(e));
@@ -114,20 +118,20 @@ export default function AddEmployeesModal({
 
   return (
     <Modal
-      title={`Add employees to ${department?.departmentName ?? ""}`}
+      title={t("addEmp.title", { name: department?.departmentName ?? "" })}
       open={open}
       onCancel={onClose}
       onOk={handleOk}
       confirmLoading={saving}
-      okText="Add"
+      okText={t("common.add")}
       maskClosable={false}
     >
       <Form form={form} layout="vertical">
         <Form.Item
           name="employees"
-          label="Employees"
-          rules={[{ required: true, message: "Select at least one employee" }]}
-          extra="Employees who are already in another department will be transferred."
+          label={t("addEmp.employees")}
+          rules={[{ required: true, message: t("addEmp.selectOne") }]}
+          extra={t("addEmp.transferHint")}
         >
           <Select
             mode="multiple"
@@ -136,17 +140,21 @@ export default function AddEmployeesModal({
             filterOption={false}
             onSearch={handleSearch}
             options={options}
-            placeholder="Search by name or code"
+            placeholder={t("addEmp.searchPlaceholder")}
           />
         </Form.Item>
         <Form.Item
           name="effectiveDate"
-          label="Effective date"
+          label={t("addEmp.effectiveDate")}
           rules={[{ required: true }]}
         >
           <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
         </Form.Item>
-        <Form.Item name="remark" label="Remark" rules={[{ max: 255 }]}>
+        <Form.Item
+          name="remark"
+          label={t("addEmp.remark")}
+          rules={[{ max: 255 }]}
+        >
           <Input />
         </Form.Item>
       </Form>

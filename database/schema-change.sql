@@ -17,8 +17,8 @@ ALTER TABLE department
   ADD COLUMN deleted_at DATETIME NULL
     COMMENT 'วันเวลาที่ลบข้อมูล (Soft Delete), NULL = ยังไม่ถูกลบ';
 
--- 3. Index used by Report.sql
+-- 3. Index used by report.sql
 --    Filters by gender first (equality), then by a birth date range.
 CREATE INDEX idx_employee_gender_birth
   ON employee (gender_id, birth_date)
-  COMMENT 'ช่วยให้ query ใน Report.sql เร็วขึ้น ด้วย index: gender filter, then birth date range';
+  COMMENT 'ช่วยให้ query ใน report.sql เร็วขึ้น ด้วย index: gender filter, then birth date range';

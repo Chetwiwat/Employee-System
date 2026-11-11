@@ -108,3 +108,19 @@ body {
     font-size: 30px;
   }
 }
+
+/* ---------- search filters ---------- */
+.filter-form .ant-form-item {
+  margin-bottom: 16px;
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* language switch sits at the far right of the header */
+.app-header .ant-segmented {
+  flex-shrink: 0;
+}

@@ -1,6 +1,6 @@
 # Employee Records System
 
-Employee and department management. React + Ant Design frontend, NestJS + TypeORM API, MySQL.
+Employee and department management. React + Ant Design frontend, NestJS + TypeORM **GraphQL** API, MySQL.
 
 ## Requirements
 
@@ -14,7 +14,7 @@ Employee and department management. React + Ant Design frontend, NestJS + TypeOR
 Apply the schema changes (adds `department.location`, `department.deleted_at` and one index):
 
 ```bash
-mysql -u <user> -p <database> < database/schema-changes.sql
+mysql -u <user> -p <database> < database/schema-change.sql
 ```
 
 ### 2. Backend
@@ -37,36 +37,64 @@ npm run dev              # http://localhost:5173
 
 ## Features
 
-- **Employees:** add, edit, soft-delete; search by code, name (first or last), position; server-side pagination.
-- **Departments:** add, edit, soft-delete; search by code, name, head; add and remove employees.
+- **Employees:** add, edit, soft-delete; choose the department in the form; search by code, name (first or last), position, department; sort by column; server-side pagination.
+- **Departments:** add, edit, soft-delete; search by code, name, head; sort by column (including member count); add and remove employees.
+- Thai / English interface (switch in the top-right corner).
 - Adding, transferring or removing an employee writes a row to `employee_department_history` inside a transaction.
 
 ## Business rules
 
-- A department head must be a member of that department.
+- A department head must be a member of that department, so a new department has no head
+  until employees are added.
 - Removing the head from a department also clears the head.
 - A department with members cannot be deleted.
 - Deleting is soft (`deleted_at`), so history stays intact.
 
-## API (REST)
+## API (GraphQL)
 
-| Method                | Path                                                       | Purpose                     |
-| --------------------- | ---------------------------------------------------------- | --------------------------- |
-| GET                   | `/master/genders`, `/master/positions`, `/master/prefixes` | Dropdown data               |
-| GET                   | `/employees?code=&name=&positionId=&page=&pageSize=`       | List and search             |
-| POST / PATCH / DELETE | `/employees`, `/employees/:id`                             | Create, update, soft-delete |
-| GET                   | `/departments?code=&name=&head=&page=&pageSize=`           | List and search             |
-| POST / PATCH / DELETE | `/departments`, `/departments/:id`                         | Create, update, soft-delete |
-| GET / POST            | `/departments/:id/employees`                               | List members, add employees |
-| DELETE                | `/departments/:id/employees/:employeeId`                   | Remove an employee          |
+One endpoint: `POST /graphql`. Open `http://localhost:3000/graphql` in a browser for
+**GraphiQL**, an editor with autocomplete and docs generated from the schema. The schema is
+built code-first from the decorated classes and written to `backend/src/schema.gql`.
 
-## Report.sql
+| Type     | Operation                                                       | Purpose                               |
+| -------- | --------------------------------------------------------------- | ------------------------------------- |
+| Query    | `genders`, `positions`, `prefixes(genderId)`                    | Dropdown data                         |
+| Query    | `employees(query)`, `employee(id)`                              | Search, filter, sort, page; one item  |
+| Mutation | `createEmployee`, `updateEmployee`, `removeEmployee`            | Create, update, soft-delete           |
+| Query    | `departments(query)`, `department(id)`, `departmentMembers(id)` | Search, sort, page; one item; members |
+| Mutation | `createDepartment`, `updateDepartment`, `removeDepartment`      | Create, update, soft-delete           |
+| Mutation | `addEmployeesToDepartment`, `removeEmployeeFromDepartment`      | Add/transfer or remove members        |
 
-`Report.sql` lists male employees aged 25 to 35 (inclusive) with name, birth date and department name.
+Example:
+
+```graphql
+query {
+  employees(
+    query: { departmentId: 3, sortBy: "salary", sortOrder: "desc", pageSize: 5 }
+  ) {
+    total
+    items {
+      employeeCode
+      firstName
+      lastName
+      salary
+      department {
+        departmentName
+      }
+    }
+  }
+}
+```
+
+Errors come back in the `errors` array with a readable `message` and an `extensions.code`
+(`BAD_REQUEST`, `NOT_FOUND`, `CONFLICT`).
+
+## report.sql
+
+`report.sql` lists male employees aged 25 to 35 (inclusive) with name, birth date and department name.
 Employees without a department are included. Resigned employees are included.
-It assumes the male gender code is `'M'`, so change it if your data differs.
 
 ## Notes
 
-- Frontend is not responsive (per the assignment).
-- Deployed demo: <url, if you deploy>
+- Deployed demo: https://employee-system-s7mp.vercel.app/
+- Deployed API (GraphiQL): https://employee-system-tau.vercel.app/graphql

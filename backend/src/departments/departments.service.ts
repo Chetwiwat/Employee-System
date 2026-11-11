@@ -24,14 +24,31 @@ export class DepartmentsService {
   ) {}
 
   async findAll(q: QueryDepartmentDto) {
-    const { code, name, head, page = 1, pageSize = 10 } = q;
+    const { code, name, head, sortBy, sortOrder, page = 1, pageSize = 10 } = q;
 
     const qb = this.repo
       .createQueryBuilder('d')
       .leftJoinAndSelect('d.head', 'head')
-      .orderBy('d.id', 'DESC')
-      .skip((page - 1) * pageSize)
-      .take(pageSize);
+      // head is many-to-one (one row per department), so plain offset/limit
+      // is safe and allows sorting by the computed member count
+      .offset((page - 1) * pageSize)
+      .limit(pageSize);
+
+    const order = sortOrder === 'desc' ? 'DESC' : 'ASC';
+    if (sortBy === 'code') qb.addOrderBy('d.departmentCode', order);
+    if (sortBy === 'name') qb.addOrderBy('d.departmentName', order);
+    if (sortBy === 'employeeCount') {
+      qb.addSelect(
+        (sub) =>
+          sub
+            .select('COUNT(*)')
+            .from(Employee, 'm')
+            .where('m.department_id = d.id')
+            .andWhere('m.deleted_at IS NULL'),
+        'member_count',
+      ).addOrderBy('member_count', order);
+    }
+    qb.addOrderBy('d.id', 'DESC');
 
     if (code) qb.andWhere('d.departmentCode LIKE :code', { code: `%${code}%` });
     if (name) qb.andWhere('d.departmentName LIKE :name', { name: `%${name}%` });

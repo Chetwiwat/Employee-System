@@ -3,6 +3,7 @@ import { App, Button, Drawer, Popconfirm, Table, Tag } from "antd";
 import type { TableColumnsType } from "antd";
 import { errorMessage } from "../api/client";
 import { departmentApi } from "../api/departments";
+import { useI18n } from "../i18n";
 import { fullName } from "../utils";
 import type { DepartmentDetail, Employee } from "../types";
 import AddEmployeesModal from "./AddEmployeesModal";
@@ -21,6 +22,7 @@ export default function DepartmentMembersDrawer({
   onChanged,
 }: Props) {
   const { message } = App.useApp();
+  const { t } = useI18n();
   const [reloadKey, setReloadKey] = useState(0);
   const [result, setResult] = useState<{
     deptId: number;
@@ -65,7 +67,7 @@ export default function DepartmentMembersDrawer({
     if (!department) return;
     try {
       await departmentApi.removeEmployee(department.id, employeeId);
-      message.success("Employee removed from department");
+      message.success(t("members.removed"));
       refresh();
     } catch (e) {
       message.error(errorMessage(e));
@@ -73,22 +75,26 @@ export default function DepartmentMembersDrawer({
   };
 
   const columns: TableColumnsType<Employee> = [
-    { title: "Code", dataIndex: "employeeCode", width: 110 },
+    { title: t("common.code"), dataIndex: "employeeCode", width: 110 },
     {
-      title: "Name",
+      title: t("common.name"),
       render: (_, r) => (
         <>
           {fullName(r)}{" "}
-          {r.id === department?.headEmployeeId && <Tag color="blue">Head</Tag>}
+          {r.id === department?.headEmployeeId && (
+            <Tag color="blue">{t("members.headTag")}</Tag>
+          )}
         </>
       ),
     },
-    { title: "Position", render: (_, r) => r.position?.positionName },
+    { title: t("common.position"), render: (_, r) => r.position?.positionName },
     {
-      title: "Status",
+      title: t("common.status"),
       dataIndex: "status",
       render: (s: Employee["status"]) => (
-        <Tag color={s === "ACTIVE" ? "green" : "default"}>{s}</Tag>
+        <Tag color={s === "ACTIVE" ? "green" : "default"}>
+          {t(`status.${s}` as const)}
+        </Tag>
       ),
     },
     {
@@ -96,13 +102,13 @@ export default function DepartmentMembersDrawer({
       width: 100,
       render: (_, r) => (
         <Popconfirm
-          title="Remove from this department?"
-          okText="Remove"
+          title={t("members.removeConfirm")}
+          okText={t("members.remove")}
           okButtonProps={{ danger: true }}
           onConfirm={() => handleRemove(r.id)}
         >
           <Button size="small" danger>
-            Remove
+            {t("members.remove")}
           </Button>
         </Popconfirm>
       ),
@@ -111,13 +117,13 @@ export default function DepartmentMembersDrawer({
 
   return (
     <Drawer
-      title={`Members of ${department?.departmentName ?? ""}`}
+      title={t("members.title", { name: department?.departmentName ?? "" })}
       open={open}
       onClose={onClose}
       size={760}
       extra={
         <Button type="primary" onClick={() => setAddOpen(true)}>
-          Add employees
+          {t("members.add")}
         </Button>
       }
     >

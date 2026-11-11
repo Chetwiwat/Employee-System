@@ -1,28 +1,49 @@
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { Field, InputType, Int } from '@nestjs/graphql';
+import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
+@InputType('EmployeeQueryInput')
 export class QueryEmployeeDto {
+  @Field({ nullable: true })
   @IsOptional()
   @IsString()
   code?: string;
 
+  @Field({ nullable: true, description: 'Matches first name or last name' })
   @IsOptional()
   @IsString()
-  name?: string; // matches first name OR last name
+  name?: string;
 
+  @Field(() => Int, { nullable: true })
   @IsOptional()
-  @Type(() => Number)
   @IsInt()
   positionId?: number;
 
+  @Field(() => Int, { nullable: true })
   @IsOptional()
-  @Type(() => Number)
+  @IsInt()
+  departmentId?: number;
+
+  @Field({
+    nullable: true,
+    description: 'code, name, birthDate, startDate, salary or status',
+  })
+  @IsOptional()
+  @IsIn(['code', 'name', 'birthDate', 'startDate', 'salary', 'status'])
+  sortBy?: 'code' | 'name' | 'birthDate' | 'startDate' | 'salary' | 'status';
+
+  @Field({ nullable: true, description: 'asc or desc' })
+  @IsOptional()
+  @IsIn(['asc', 'desc'])
+  sortOrder?: 'asc' | 'desc';
+
+  @Field(() => Int, { nullable: true, defaultValue: 1 })
+  @IsOptional()
   @IsInt()
   @Min(1)
   page?: number = 1;
 
+  @Field(() => Int, { nullable: true, defaultValue: 10 })
   @IsOptional()
-  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(100)

@@ -1,0 +1,207 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input AddEmployeesInput {
+  """YYYY-MM-DD, defaults to today"""
+  effectiveDate: String
+  employeeIds: [Int!]!
+  remark: String
+}
+
+input CreateDepartmentInput {
+  departmentCode: String!
+  departmentName: String!
+  headEmployeeId: Int
+  location: String
+}
+
+input CreateEmployeeInput {
+  """YYYY-MM-DD"""
+  birthDate: String!
+  departmentId: Int
+  employeeCode: String!
+  firstName: String!
+  genderId: Int!
+  lastName: String!
+  positionId: Int!
+  prefixId: Int!
+  salary: Float
+
+  """YYYY-MM-DD"""
+  startDate: String!
+
+  """ACTIVE or RESIGNED"""
+  status: String
+}
+
+type Department {
+  departmentCode: String!
+  departmentName: String!
+  employeeCount: Int
+  head: Employee
+  headEmployeeId: Int
+  id: Int!
+  location: String
+}
+
+type DepartmentPage {
+  items: [Department!]!
+  page: Int!
+  pageSize: Int!
+  total: Int!
+}
+
+input DepartmentQueryInput {
+  code: String
+
+  """Matches the head's full name"""
+  head: String
+  name: String
+  page: Int = 1
+  pageSize: Int = 10
+
+  """code, name or employeeCount"""
+  sortBy: String
+
+  """asc or desc"""
+  sortOrder: String
+}
+
+type Employee {
+  """YYYY-MM-DD"""
+  birthDate: String!
+  department: Department
+  departmentId: Int
+  employeeCode: String!
+  firstName: String!
+  gender: MasterGender!
+  genderId: Int!
+  id: Int!
+  lastName: String!
+  position: MasterPosition!
+  positionId: Int!
+  prefix: MasterPrefix!
+  prefixId: Int!
+
+  """
+  Decimal as a string, e.g. "35000.00"
+  """
+  salary: String!
+
+  """YYYY-MM-DD"""
+  startDate: String!
+
+  """ACTIVE or RESIGNED"""
+  status: String!
+}
+
+type EmployeePage {
+  items: [Employee!]!
+  page: Int!
+  pageSize: Int!
+  total: Int!
+}
+
+input EmployeeQueryInput {
+  code: String
+  departmentId: Int
+
+  """Matches first name or last name"""
+  name: String
+  page: Int = 1
+  pageSize: Int = 10
+  positionId: Int
+
+  """code, name, birthDate, startDate, salary or status"""
+  sortBy: String
+
+  """asc or desc"""
+  sortOrder: String
+}
+
+type MasterGender {
+  genderCode: String!
+  genderName: String!
+  id: Int!
+}
+
+type MasterPosition {
+  id: Int!
+  positionName: String!
+}
+
+type MasterPrefix {
+  genderId: Int
+  id: Int!
+  prefixName: String!
+}
+
+type Mutation {
+  """Adds or transfers employees into a department; returns its members"""
+  addEmployeesToDepartment(id: Int!, input: AddEmployeesInput!): [Employee!]!
+  createDepartment(input: CreateDepartmentInput!): Department!
+  createEmployee(input: CreateEmployeeInput!): Employee!
+
+  """Soft-deletes an empty department"""
+  removeDepartment(id: Int!): RemoveResult!
+
+  """Soft-deletes an employee"""
+  removeEmployee(id: Int!): RemoveResult!
+
+  """Removes one employee from a department"""
+  removeEmployeeFromDepartment(employeeId: Int!, id: Int!): RemoveResult!
+  updateDepartment(id: Int!, input: UpdateDepartmentInput!): Department!
+  updateEmployee(id: Int!, input: UpdateEmployeeInput!): Employee!
+}
+
+type Query {
+  department(id: Int!): Department!
+
+  """Employees in a department"""
+  departmentMembers(id: Int!): [Employee!]!
+
+  """Search, sort and page departments (with member counts)"""
+  departments(query: DepartmentQueryInput): DepartmentPage!
+  employee(id: Int!): Employee!
+
+  """Search, filter, sort and page employees"""
+  employees(query: EmployeeQueryInput): EmployeePage!
+  genders: [MasterGender!]!
+  positions: [MasterPosition!]!
+
+  """Prefixes, optionally only those for one gender"""
+  prefixes(genderId: Int): [MasterPrefix!]!
+}
+
+type RemoveResult {
+  """ID of the removed record"""
+  id: Int!
+  success: Boolean!
+}
+
+input UpdateDepartmentInput {
+  departmentCode: String
+  departmentName: String
+  headEmployeeId: Int
+  location: String
+}
+
+input UpdateEmployeeInput {
+  """YYYY-MM-DD"""
+  birthDate: String
+  departmentId: Int
+  employeeCode: String
+  firstName: String
+  genderId: Int
+  lastName: String
+  positionId: Int
+  prefixId: Int
+  salary: Float
+
+  """YYYY-MM-DD"""
+  startDate: String
+
+  """ACTIVE or RESIGNED"""
+  status: String
+}

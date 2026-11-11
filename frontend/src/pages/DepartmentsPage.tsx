@@ -1,14 +1,26 @@
 import { useEffect, useState } from "react";
-import { App, Button, Card, Form, Input, Popconfirm, Space, Table } from "antd";
+import {
+  App,
+  Button,
+  Card,
+  Col,
+  Form,
+  Input,
+  Popconfirm,
+  Row,
+  Space,
+  Table,
+} from "antd";
 import type { TableColumnsType } from "antd";
 import { errorMessage } from "../api/client";
 import { departmentApi } from "../api/departments";
 import type { DepartmentQuery } from "../api/departments";
 import DepartmentFormModal from "../components/DepartmentFormModal";
 import DepartmentMembersDrawer from "../components/DepartmentMembersDrawer";
-import { fullName } from "../utils";
+import { columnSortOrder, fullName, toSort } from "../utils";
 import type { DepartmentDetail, Paged } from "../types";
 import PageHeader from "../components/PageHeader";
+import { useI18n } from "../i18n";
 
 interface SearchValues {
   code?: string;
@@ -25,6 +37,7 @@ const EMPTY: Paged<DepartmentDetail> = {
 
 export default function DepartmentsPage() {
   const { message } = App.useApp();
+  const { t } = useI18n();
   const [searchForm] = Form.useForm<SearchValues>();
 
   const [query, setQuery] = useState<DepartmentQuery>({
@@ -79,6 +92,8 @@ export default function DepartmentsPage() {
     setQuery((q) => ({
       page: 1,
       pageSize: q.pageSize,
+      sortBy: q.sortBy,
+      sortOrder: q.sortOrder,
       code: v.code?.trim() || undefined,
       name: v.name?.trim() || undefined,
       head: v.head?.trim() || undefined,
@@ -93,7 +108,7 @@ export default function DepartmentsPage() {
   const handleDelete = async (id: number) => {
     try {
       await departmentApi.remove(id);
-      message.success("Department deleted");
+      message.success(t("dept.deleted"));
       reload();
     } catch (e) {
       message.error(errorMessage(e)); // e.g. "Remove all employees from this department first"
@@ -101,22 +116,41 @@ export default function DepartmentsPage() {
   };
 
   const columns: TableColumnsType<DepartmentDetail> = [
-    { title: "Code", dataIndex: "departmentCode", width: 120 },
-    { title: "Name", dataIndex: "departmentName" },
-    { title: "Head", render: (_, r) => (r.head ? fullName(r.head) : "-") },
     {
-      title: "Location",
+      title: t("common.code"),
+      dataIndex: "departmentCode",
+      width: 120,
+      key: "code",
+      sorter: true,
+      sortOrder: columnSortOrder("code", query),
+    },
+    {
+      title: t("common.name"),
+      dataIndex: "departmentName",
+      key: "name",
+      sorter: true,
+      sortOrder: columnSortOrder("name", query),
+    },
+    {
+      title: t("dept.head"),
+      render: (_, r) => (r.head ? fullName(r.head) : "-"),
+    },
+    {
+      title: t("dept.location"),
       dataIndex: "location",
       render: (v: string | null) => v ?? "-",
     },
     {
-      title: "Employees",
+      title: t("dept.employees"),
       dataIndex: "employeeCount",
-      width: 110,
+      width: 130,
       align: "right",
+      key: "employeeCount",
+      sorter: true,
+      sortOrder: columnSortOrder("employeeCount", query),
     },
     {
-      title: "Actions",
+      title: t("common.actions"),
       width: 230,
       render: (_, r) => (
         <Space>
@@ -127,7 +161,7 @@ export default function DepartmentsPage() {
               setDrawerOpen(true);
             }}
           >
-            Members
+            {t("dept.members")}
           </Button>
           <Button
             size="small"
@@ -136,16 +170,16 @@ export default function DepartmentsPage() {
               setModalOpen(true);
             }}
           >
-            Edit
+            {t("common.edit")}
           </Button>
           <Popconfirm
-            title="Delete this department?"
-            okText="Delete"
+            title={t("dept.deleteConfirm")}
+            okText={t("common.delete")}
             okButtonProps={{ danger: true }}
             onConfirm={() => handleDelete(r.id)}
           >
             <Button size="small" danger>
-              Delete
+              {t("common.delete")}
             </Button>
           </Popconfirm>
         </Space>
@@ -155,35 +189,48 @@ export default function DepartmentsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Departments"
-        subtitle="Manage departments, their heads and members"
-      />
+      <PageHeader title={t("nav.departments")} subtitle={t("dept.subtitle")} />
 
       <Card style={{ marginBottom: 16 }}>
-        <Form form={searchForm} layout="inline" onFinish={handleSearch}>
-          <Form.Item name="code" label="Code">
-            <Input allowClear />
-          </Form.Item>
-          <Form.Item name="name" label="Name">
-            <Input allowClear />
-          </Form.Item>
-          <Form.Item name="head" label="Head">
-            <Input allowClear placeholder="Head's name" />
-          </Form.Item>
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit">
-                Search
-              </Button>
-              <Button onClick={handleReset}>Reset</Button>
-            </Space>
-          </Form.Item>
+        <Form
+          form={searchForm}
+          layout="vertical"
+          className="filter-form"
+          onFinish={handleSearch}
+        >
+          <Row gutter={16}>
+            <Col xs={24} sm={8} lg={3}>
+              <Form.Item name="code" label={t("common.code")}>
+                <Input allowClear />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={16} lg={7}>
+              <Form.Item name="name" label={t("common.name")}>
+                <Input allowClear />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} lg={7}>
+              <Form.Item name="head" label={t("dept.head")}>
+                <Input allowClear placeholder={t("dept.headPlaceholder")} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} lg={7}>
+              {/* empty label keeps the buttons level with the inputs */}
+              <Form.Item label=" " colon={false}>
+                <div className="filter-actions">
+                  <Button onClick={handleReset}>{t("common.reset")}</Button>
+                  <Button type="primary" htmlType="submit">
+                    {t("common.search")}
+                  </Button>
+                </div>
+              </Form.Item>
+            </Col>
+          </Row>
         </Form>
       </Card>
 
       <Card
-        title={`${data.total} departments`}
+        title={t("dept.count", { n: data.total })}
         extra={
           <Button
             type="primary"
@@ -192,7 +239,7 @@ export default function DepartmentsPage() {
               setModalOpen(true);
             }}
           >
-            Add department
+            {t("dept.add")}
           </Button>
         }
       >
@@ -207,9 +254,16 @@ export default function DepartmentsPage() {
             pageSize: query.pageSize,
             total: data.total,
             showSizeChanger: true,
-            onChange: (page, pageSize) =>
-              setQuery((q) => ({ ...q, page, pageSize })),
           }}
+          onChange={(p, _filters, sorter, { action }) =>
+            setQuery((q) => ({
+              ...q,
+              ...toSort<NonNullable<DepartmentQuery["sortBy"]>>(sorter),
+              // a new sort order starts again from page 1
+              page: action === "sort" ? 1 : (p.current ?? 1),
+              pageSize: p.pageSize ?? q.pageSize,
+            }))
+          }
         />
       </Card>
 

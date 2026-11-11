@@ -3,9 +3,11 @@ import {
   App,
   Button,
   Card,
+  Col,
   Form,
   Input,
   Popconfirm,
+  Row,
   Select,
   Space,
   Table,
@@ -14,23 +16,28 @@ import {
 import type { TableColumnsType } from "antd";
 import dayjs from "dayjs";
 import { errorMessage } from "../api/client";
+import { departmentApi } from "../api/departments";
 import { employeeApi } from "../api/employees";
-import type { EmployeeQuery } from "../api/employees";
+import type { EmployeeQuery, EmployeeSortKey } from "../api/employees";
 import { masterApi } from "../api/master";
 import EmployeeFormModal from "../components/EmployeeFormModal";
-import type { Employee, Paged, Position } from "../types";
+import type { Department, Employee, Paged, Position } from "../types";
 import PageHeader from "../components/PageHeader";
+import { useI18n } from "../i18n";
+import { columnSortOrder, toSort } from "../utils";
 
 interface SearchValues {
   code?: string;
   name?: string;
   positionId?: number;
+  departmentId?: number;
 }
 
 const EMPTY: Paged<Employee> = { items: [], total: 0, page: 1, pageSize: 10 };
 
 export default function EmployeesPage() {
   const { message } = App.useApp();
+  const { t } = useI18n();
   const [searchForm] = Form.useForm<SearchValues>();
 
   const [query, setQuery] = useState<EmployeeQuery>({ page: 1, pageSize: 10 });
@@ -40,6 +47,7 @@ export default function EmployeesPage() {
     data: Paged<Employee>;
   } | null>(null);
   const [positions, setPositions] = useState<Position[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
 
@@ -79,15 +87,22 @@ export default function EmployeesPage() {
       .positions()
       .then(setPositions)
       .catch((e) => message.error(errorMessage(e)));
+    departmentApi
+      .list({ page: 1, pageSize: 100 })
+      .then((r) => setDepartments(r.items))
+      .catch((e) => message.error(errorMessage(e)));
   }, [message]);
 
   const handleSearch = (v: SearchValues) => {
     setQuery((q) => ({
       page: 1,
       pageSize: q.pageSize,
+      sortBy: q.sortBy,
+      sortOrder: q.sortOrder,
       code: v.code?.trim() || undefined,
       name: v.name?.trim() || undefined,
       positionId: v.positionId,
+      departmentId: v.departmentId,
     }));
   };
 
@@ -99,7 +114,7 @@ export default function EmployeesPage() {
   const handleDelete = async (id: number) => {
     try {
       await employeeApi.remove(id);
-      message.success("Employee deleted");
+      message.success(t("emp.deleted"));
       reload();
     } catch (e) {
       message.error(errorMessage(e));
@@ -117,51 +132,85 @@ export default function EmployeesPage() {
   };
 
   const columns: TableColumnsType<Employee> = [
-    { title: "Code", dataIndex: "employeeCode", width: 110 },
     {
-      title: "Name",
+      title: t("common.code"),
+      dataIndex: "employeeCode",
+      width: 110,
+      key: "code",
+      sorter: true,
+      sortOrder: columnSortOrder("code", query),
+    },
+    {
+      title: t("common.name"),
+      key: "name",
+      sorter: true,
+      sortOrder: columnSortOrder("name", query),
       render: (_, r) =>
         `${r.prefix?.prefixName ?? ""} ${r.firstName} ${r.lastName}`,
     },
-    { title: "Gender", render: (_, r) => r.gender?.genderName },
+    { title: t("emp.gender"), render: (_, r) => r.gender?.genderName },
     {
-      title: "Birth date",
+      title: t("emp.birthDate"),
       dataIndex: "birthDate",
+      key: "birthDate",
+      sorter: true,
+      sortOrder: columnSortOrder("birthDate", query),
       render: (v: string) => dayjs(v).format("DD/MM/YYYY"),
     },
-    { title: "Position", render: (_, r) => r.position?.positionName },
+    { title: t("common.position"), render: (_, r) => r.position?.positionName },
     {
-      title: "Department",
+      title: t("common.department"),
       render: (_, r) => r.department?.departmentName ?? "-",
     },
     {
-      title: "Start date",
+      title: t("emp.startDate"),
       dataIndex: "startDate",
+      key: "startDate",
+      sorter: true,
+      sortOrder: columnSortOrder("startDate", query),
       render: (v: string) => dayjs(v).format("DD/MM/YYYY"),
     },
     {
-      title: "Status",
+      title: t("emp.salary"),
+      dataIndex: "salary",
+      align: "right",
+      key: "salary",
+      sorter: true,
+      sortOrder: columnSortOrder("salary", query),
+      render: (v: string) =>
+        Number(v).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }),
+    },
+    {
+      title: t("common.status"),
       dataIndex: "status",
+      key: "status",
+      sorter: true,
+      sortOrder: columnSortOrder("status", query),
       render: (s: Employee["status"]) => (
-        <Tag color={s === "ACTIVE" ? "green" : "default"}>{s}</Tag>
+        <Tag color={s === "ACTIVE" ? "green" : "default"}>
+          {t(`status.${s}` as const)}
+        </Tag>
       ),
     },
     {
-      title: "Actions",
+      title: t("common.actions"),
       width: 150,
       render: (_, r) => (
         <Space>
           <Button size="small" onClick={() => openEdit(r)}>
-            Edit
+            {t("common.edit")}
           </Button>
           <Popconfirm
-            title="Delete this employee?"
-            okText="Delete"
+            title={t("emp.deleteConfirm")}
+            okText={t("common.delete")}
             okButtonProps={{ danger: true }}
             onConfirm={() => handleDelete(r.id)}
           >
             <Button size="small" danger>
-              Delete
+              {t("common.delete")}
             </Button>
           </Popconfirm>
         </Space>
@@ -171,45 +220,72 @@ export default function EmployeesPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Employees"
-        subtitle="Manage employee records, positions and status"
-      />
+      <PageHeader title={t("nav.employees")} subtitle={t("emp.subtitle")} />
 
       <Card style={{ marginBottom: 16 }}>
-        <Form form={searchForm} layout="inline" onFinish={handleSearch}>
-          <Form.Item name="code" label="Code">
-            <Input allowClear />
-          </Form.Item>
-          <Form.Item name="name" label="Name">
-            <Input allowClear placeholder="First or last name" />
-          </Form.Item>
-          <Form.Item name="positionId" label="Position">
-            <Select
-              allowClear
-              style={{ width: 200 }}
-              options={positions.map((p) => ({
-                value: p.id,
-                label: p.positionName,
-              }))}
-            />
-          </Form.Item>
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit">
-                Search
-              </Button>
-              <Button onClick={handleReset}>Reset</Button>
-            </Space>
-          </Form.Item>
+        <Form
+          form={searchForm}
+          layout="vertical"
+          className="filter-form"
+          onFinish={handleSearch}
+        >
+          <Row gutter={16}>
+            <Col xs={24} sm={8} lg={3}>
+              <Form.Item name="code" label={t("common.code")}>
+                <Input allowClear />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={16} lg={5}>
+              <Form.Item name="name" label={t("common.name")}>
+                <Input allowClear placeholder={t("emp.namePlaceholder")} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} lg={5}>
+              <Form.Item name="positionId" label={t("common.position")}>
+                <Select
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  options={positions.map((p) => ({
+                    value: p.id,
+                    label: p.positionName,
+                  }))}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} lg={5}>
+              <Form.Item name="departmentId" label={t("common.department")}>
+                <Select
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  options={departments.map((d) => ({
+                    value: d.id,
+                    label: d.departmentName,
+                  }))}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} lg={6}>
+              {/* empty label keeps the buttons level with the inputs */}
+              <Form.Item label=" " colon={false}>
+                <div className="filter-actions">
+                  <Button onClick={handleReset}>{t("common.reset")}</Button>
+                  <Button type="primary" htmlType="submit">
+                    {t("common.search")}
+                  </Button>
+                </div>
+              </Form.Item>
+            </Col>
+          </Row>
         </Form>
       </Card>
 
       <Card
-        title={`${data.total} employees`}
+        title={t("emp.count", { n: data.total })}
         extra={
           <Button type="primary" onClick={openAdd}>
-            Add employee
+            {t("emp.add")}
           </Button>
         }
       >
@@ -224,9 +300,16 @@ export default function EmployeesPage() {
             pageSize: query.pageSize,
             total: data.total,
             showSizeChanger: true,
-            onChange: (page, pageSize) =>
-              setQuery((q) => ({ ...q, page, pageSize })),
           }}
+          onChange={(p, _filters, sorter, { action }) =>
+            setQuery((q) => ({
+              ...q,
+              ...toSort<EmployeeSortKey>(sorter),
+              // a new sort order starts again from page 1
+              page: action === "sort" ? 1 : (p.current ?? 1),
+              pageSize: p.pageSize ?? q.pageSize,
+            }))
+          }
         />
       </Card>
 

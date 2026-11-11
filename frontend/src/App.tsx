@@ -1,4 +1,6 @@
-import { App as AntApp, ConfigProvider, Layout, Menu } from "antd";
+import { App as AntApp, ConfigProvider, Layout, Menu, Segmented } from "antd";
+import enUS from "antd/locale/en_US";
+import thTH from "antd/locale/th_TH";
 import { ApartmentOutlined, TeamOutlined } from "@ant-design/icons";
 import {
   BrowserRouter,
@@ -8,6 +10,8 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
+import { I18nProvider, useI18n } from "./i18n";
+import type { Lang } from "./i18n";
 import DepartmentsPage from "./pages/DepartmentsPage";
 import EmployeesPage from "./pages/EmployeesPage";
 import HomePage from "./pages/HomePage";
@@ -15,6 +19,7 @@ import { appTheme } from "./theme";
 
 function Shell() {
   const { pathname } = useLocation();
+  const { lang, setLang, t } = useI18n();
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Layout.Header className="app-header">
@@ -22,7 +27,7 @@ function Shell() {
           <span className="brand-logo">
             <TeamOutlined />
           </span>
-          Employee System
+          {t("app.name")}
         </Link>
         <Menu
           mode="horizontal"
@@ -32,13 +37,22 @@ function Shell() {
             {
               key: "/employees",
               icon: <TeamOutlined />,
-              label: <Link to="/employees">Employees</Link>,
+              label: <Link to="/employees">{t("nav.employees")}</Link>,
             },
             {
               key: "/departments",
               icon: <ApartmentOutlined />,
-              label: <Link to="/departments">Departments</Link>,
+              label: <Link to="/departments">{t("nav.departments")}</Link>,
             },
+          ]}
+        />
+        <Segmented<Lang>
+          aria-label="Language"
+          value={lang}
+          onChange={setLang}
+          options={[
+            { value: "th", label: "TH" },
+            { value: "en", label: "EN" },
           ]}
         />
       </Layout.Header>
@@ -54,21 +68,28 @@ function Shell() {
         </div>
       </Layout.Content>
 
-      <Layout.Footer className="app-footer">
-        Employee Records System
-      </Layout.Footer>
+      <Layout.Footer className="app-footer">{t("app.footer")}</Layout.Footer>
     </Layout>
   );
 }
 
-export default function App() {
+function Themed() {
+  const { lang } = useI18n();
   return (
-    <ConfigProvider theme={appTheme}>
+    <ConfigProvider theme={appTheme} locale={lang === "th" ? thTH : enUS}>
       <AntApp>
         <BrowserRouter>
           <Shell />
         </BrowserRouter>
       </AntApp>
     </ConfigProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <I18nProvider>
+      <Themed />
+    </I18nProvider>
   );
 }

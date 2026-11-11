@@ -8,6 +8,7 @@ import {
 import { Link } from "react-router-dom";
 import { departmentApi } from "../api/departments";
 import { employeeApi } from "../api/employees";
+import { useI18n } from "../i18n";
 
 interface Totals {
   employees: number | null;
@@ -15,6 +16,7 @@ interface Totals {
 }
 
 export default function HomePage() {
+  const { t } = useI18n();
   const [totals, setTotals] = useState<Totals | null>(null); // null = still loading
 
   useEffect(() => {
@@ -40,11 +42,8 @@ export default function HomePage() {
   return (
     <div>
       <section className="hero">
-        <h1>Employee System</h1>
-        <p>
-          Keep employee records and departments in one place: search people,
-          manage who belongs where, and keep a history of every move.
-        </p>
+        <h1>{t("app.name")}</h1>
+        <p>{t("home.intro")}</p>
       </section>
 
       <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
@@ -55,7 +54,7 @@ export default function HomePage() {
                 <TeamOutlined />
               </div>
               <Statistic
-                title="Employees"
+                title={t("nav.employees")}
                 value={totals?.employees ?? "-"}
                 loading={loading}
               />
@@ -63,10 +62,10 @@ export default function HomePage() {
                 type="secondary"
                 style={{ margin: "12px 0" }}
               >
-                Add, edit and search employee records.
+                {t("home.employeesDesc")}
               </Typography.Paragraph>
               <Typography.Text strong style={{ color: "#4f46e5" }}>
-                Open employees <ArrowRightOutlined />
+                {t("home.openEmployees")} <ArrowRightOutlined />
               </Typography.Text>
             </Card>
           </Link>
@@ -79,7 +78,7 @@ export default function HomePage() {
                 <ApartmentOutlined />
               </div>
               <Statistic
-                title="Departments"
+                title={t("nav.departments")}
                 value={totals?.departments ?? "-"}
                 loading={loading}
               />
@@ -87,10 +86,10 @@ export default function HomePage() {
                 type="secondary"
                 style={{ margin: "12px 0" }}
               >
-                Manage departments, heads and members.
+                {t("home.departmentsDesc")}
               </Typography.Paragraph>
               <Typography.Text strong style={{ color: "#4f46e5" }}>
-                Open departments <ArrowRightOutlined />
+                {t("home.openDepartments")} <ArrowRightOutlined />
               </Typography.Text>
             </Card>
           </Link>

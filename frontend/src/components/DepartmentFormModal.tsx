@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { App, Form, Input, Modal, Select } from "antd";
 import { errorMessage } from "../api/client";
 import { departmentApi } from "../api/departments";
+import { useI18n } from "../i18n";
 import { fullName } from "../utils";
 import type { DepartmentDetail, Employee } from "../types";
 
@@ -26,6 +27,7 @@ export default function DepartmentFormModal({
   onSaved,
 }: Props) {
   const { message } = App.useApp();
+  const { t } = useI18n();
   const [form] = Form.useForm<FormValues>();
   const [saving, setSaving] = useState(false);
   const [members, setMembers] = useState<{
@@ -100,10 +102,10 @@ export default function DepartmentFormModal({
           ...payload,
           headEmployeeId: values.headEmployeeId ?? null, // null clears the head
         });
-        message.success("Department updated");
+        message.success(t("dept.updated"));
       } else {
         await departmentApi.create(payload);
-        message.success("Department created");
+        message.success(t("dept.created"));
       }
       onSaved();
     } catch (e) {
@@ -115,20 +117,20 @@ export default function DepartmentFormModal({
 
   return (
     <Modal
-      title={editing ? "Edit department" : "Add department"}
+      title={editing ? t("dept.edit") : t("dept.add")}
       open={open}
       onCancel={onClose}
       onOk={handleOk}
       confirmLoading={saving}
-      okText="Save"
+      okText={t("common.save")}
       maskClosable={false}
     >
       <Form form={form} layout="vertical">
         <Form.Item
           name="departmentCode"
-          label="Department code"
+          label={t("dept.code")}
           rules={[
-            { required: true, whitespace: true, message: "Required" },
+            { required: true, whitespace: true, message: t("common.required") },
             { max: 20 },
           ]}
         >
@@ -136,9 +138,9 @@ export default function DepartmentFormModal({
         </Form.Item>
         <Form.Item
           name="departmentName"
-          label="Department name"
+          label={t("dept.name")}
           rules={[
-            { required: true, whitespace: true, message: "Required" },
+            { required: true, whitespace: true, message: t("common.required") },
             { max: 150 },
           ]}
         >
@@ -146,21 +148,17 @@ export default function DepartmentFormModal({
         </Form.Item>
         <Form.Item
           name="location"
-          label="Location / floor"
+          label={t("dept.locationLabel")}
           rules={[{ max: 100 }]}
         >
-          <Input placeholder="e.g. Building A, Floor 3" />
+          <Input placeholder={t("dept.locationPlaceholder")} />
         </Form.Item>
 
         {editing && (
           <Form.Item
             name="headEmployeeId"
-            label="Department head"
-            extra={
-              memberItems.length === 0
-                ? "Add employees to this department first, then you can choose a head."
-                : undefined
-            }
+            label={t("dept.headLabel")}
+            extra={memberItems.length === 0 ? t("dept.headHint") : undefined}
           >
             <Select
               allowClear
