@@ -20,8 +20,8 @@ export interface EmployeeQuery {
   pageSize: number;
 }
 
+// The employee code is not part of the payload: the server generates it.
 export interface EmployeePayload {
-  employeeCode: string;
   prefixId: number;
   firstName: string;
   lastName: string;
@@ -56,6 +56,11 @@ export const employeeApi = {
       }`,
       { query },
     ).then((d) => d.employees),
+
+  nextCode: () =>
+    gql<{ nextEmployeeCode: string }>(
+      `query NextEmployeeCode { nextEmployeeCode }`,
+    ).then((d) => d.nextEmployeeCode),
 
   create: (input: EmployeePayload) =>
     gql<{ createEmployee: Employee }>(

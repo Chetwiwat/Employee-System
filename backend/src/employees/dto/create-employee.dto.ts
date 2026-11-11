@@ -15,12 +15,6 @@ import {
 // decorators still run through the global ValidationPipe.
 @InputType('CreateEmployeeInput')
 export class CreateEmployeeDto {
-  @Field()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(20)
-  employeeCode: string;
-
   @Field(() => Int)
   @IsInt()
   prefixId: number;

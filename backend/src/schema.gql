@@ -20,7 +20,6 @@ input CreateEmployeeInput {
   """YYYY-MM-DD"""
   birthDate: String!
   departmentId: Int
-  employeeCode: String!
   firstName: String!
   genderId: Int!
   lastName: String!
@@ -168,6 +167,9 @@ type Query {
   """Search, filter, sort and page employees"""
   employees(query: EmployeeQueryInput): EmployeePage!
   genders: [MasterGender!]!
+
+  """Preview of the code the next new employee will get (assigned on save)"""
+  nextEmployeeCode: String!
   positions: [MasterPosition!]!
 
   """Prefixes, optionally only those for one gender"""
@@ -191,7 +193,6 @@ input UpdateEmployeeInput {
   """YYYY-MM-DD"""
   birthDate: String
   departmentId: Int
-  employeeCode: String
   firstName: String
   genderId: Int
   lastName: String

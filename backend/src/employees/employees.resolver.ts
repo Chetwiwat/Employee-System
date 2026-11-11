@@ -22,6 +22,14 @@ export class EmployeesResolver {
     return this.service.findAll(query ?? {});
   }
 
+  @Query(() => String, {
+    description:
+      'Preview of the code the next new employee will get (assigned on save)',
+  })
+  nextEmployeeCode() {
+    return this.service.nextEmployeeCode();
+  }
+
   @Query(() => Employee)
   employee(@Args('id', { type: () => Int }) id: number) {
     return this.service.findOne(id);

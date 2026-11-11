@@ -90,28 +90,50 @@ export class EmployeesService {
     return employee;
   }
 
+  /**
+   * Next code in the EMP + 3-digit format (EMP028). Raw SQL on purpose:
+   * it also counts soft-deleted rows, so a deleted employee's code is never
+   * handed out again (the column is UNIQUE and those rows still exist).
+   */
+  async nextEmployeeCode(manager: EntityManager = this.dataSource.manager) {
+    const [row] = await manager.query<{ n: string | number | null }[]>(
+      `SELECT MAX(CAST(SUBSTRING(employee_code, 4) AS UNSIGNED)) AS n
+         FROM employee
+        WHERE employee_code REGEXP '^EMP[0-9]+$'`,
+    );
+    const next = Number(row?.n ?? 0) + 1;
+    return `EMP${String(next).padStart(3, '0')}`;
+  }
+
   async create(dto: CreateEmployeeDto) {
     const { departmentId = null, ...rest } = dto;
-    let id: number;
-    try {
-      id = await this.dataSource.transaction(async (manager) => {
-        await this.assertDepartmentExists(manager, departmentId);
-        const saved = await manager.save(
-          manager.create(Employee, {
-            ...this.toEntityData(rest),
+    let id: number | undefined;
+    // Two saves at the same moment can pick the same code; the UNIQUE
+    // constraint rejects the second one, so take the next code and retry.
+    for (let attempt = 1; id === undefined; attempt++) {
+      try {
+        id = await this.dataSource.transaction(async (manager) => {
+          await this.assertDepartmentExists(manager, departmentId);
+          const saved = await manager.save(
+            manager.create(Employee, {
+              ...this.toEntityData(rest),
+              employeeCode: await this.nextEmployeeCode(manager),
+              departmentId,
+            }),
+          );
+          await this.recordDepartmentChange(
+            manager,
+            saved.id,
+            null,
             departmentId,
-          }),
-        );
-        await this.recordDepartmentChange(
-          manager,
-          saved.id,
-          null,
-          departmentId,
-        );
-        return saved.id;
-      });
-    } catch (e) {
-      this.handleDbError(e);
+          );
+          return saved.id;
+        });
+      } catch (e) {
+        const duplicate = (e as { code?: string }).code === 'ER_DUP_ENTRY';
+        if (duplicate && attempt < 3) continue;
+        this.handleDbError(e);
+      }
     }
     return this.findOne(id);
   }

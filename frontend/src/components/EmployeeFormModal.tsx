@@ -20,7 +20,7 @@ import { useI18n } from "../i18n";
 import type { Department, Employee, Gender, Position, Prefix } from "../types";
 
 interface FormValues {
-  employeeCode: string;
+  employeeCode?: string; // display only: the server assigns it
   genderId: number;
   prefixId: number;
   firstName: string;
@@ -100,6 +100,12 @@ export default function EmployeeFormModal({
     } else {
       form.resetFields();
       form.setFieldsValue({ status: "ACTIVE" });
+      // show the code this employee will most likely get; the server
+      // assigns the real one when saving
+      employeeApi
+        .nextCode()
+        .then((code) => form.setFieldValue("employeeCode", code))
+        .catch(() => undefined); // the preview is optional
     }
   }, [open, editing, form]);
 
@@ -111,8 +117,10 @@ export default function EmployeeFormModal({
       return; // validation messages are already shown on the fields
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { employeeCode: _code, ...fields } = values; // never sent
     const payload = {
-      ...values,
+      ...fields,
       birthDate: values.birthDate.format("YYYY-MM-DD"),
       startDate: values.startDate.format("YYYY-MM-DD"),
       departmentId: values.departmentId ?? null,
@@ -124,8 +132,10 @@ export default function EmployeeFormModal({
         await employeeApi.update(editing.id, payload);
         message.success(t("emp.updated"));
       } else {
-        await employeeApi.create(payload);
-        message.success(t("emp.created"));
+        const created = await employeeApi.create(payload);
+        message.success(
+          t("emp.createdWithCode", { code: created.employeeCode }),
+        );
       }
       onSaved();
     } catch (e) {
@@ -154,12 +164,9 @@ export default function EmployeeFormModal({
         <Form.Item
           name="employeeCode"
           label={t("emp.code")}
-          rules={[
-            { required: true, message: t("common.required") },
-            { max: 20 },
-          ]}
+          extra={editing ? undefined : t("emp.codeAuto")}
         >
-          <Input />
+          <Input disabled />
         </Form.Item>
 
         <Row gutter={16}>

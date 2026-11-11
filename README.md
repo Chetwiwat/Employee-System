@@ -49,6 +49,8 @@ npm run dev              # http://localhost:5173
 - Removing the head from a department also clears the head.
 - A department with members cannot be deleted.
 - Deleting is soft (`deleted_at`), so history stays intact.
+- Employee codes are generated automatically (`EMP` + number, e.g. `EMP028`) and never reused,
+  even after a delete. A code cannot be changed after it is created.
 
 ## API (GraphQL)
 
